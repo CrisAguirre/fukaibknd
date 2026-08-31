@@ -9,10 +9,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const { cocinero, cheesecake, envio, notas } = req.body;
 
-    // Calculate price
-    const basePrice = cheesecake.tipo === 'horneado' ? 350 : 300;
-    const decoPrice = (cheesecake.decoraciones?.length || 0) * 25;
-    const precio = basePrice + decoPrice;
+    const precio = Order.calcularPrecio(cheesecake);
 
     const order = new Order({
       usuario: req.user._id,

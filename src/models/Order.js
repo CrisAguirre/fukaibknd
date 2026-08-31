@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 
 const ORDER_STEPS = [
-  'pending',       // Pedido creado, esperando
+  'pending',       // Pedido creado, esperando pago
   'awakening',     // Paso 1: Despertar del cocinero
-  'kitchen',       // Paso 2: Revelación de la cocina
-  'preparing',     // Paso 3: Preparación / mezcla
-  'baking',        // Paso 4: Horneado
-  'decorating',    // Paso 5: Decoración
-  'packaging',     // Paso 6: Embalaje
-  'shipping',      // Paso 7: Envío
+  'mold',          // Paso 2: Preparar molde y base de galleta
+  'mixing',        // Paso 3: Mezclar ingredientes
+  'pouring',       // Paso 4: Verter mezcla en el molde
+  'baking',        // Paso 5: Hornear
+  'cooling',       // Paso 6: Enfriar y refrigerar
+  'decorating',    // Paso 7: Decorar
+  'packaging',     // Paso 8: Empacar
+  'shipping',      // Paso 9: Despachar
   'delivered',     // Entregado
   'cancelled',     // Cancelado
 ];
@@ -30,6 +32,26 @@ const orderSchema = new mongoose.Schema({
       enum: ['horneado', 'refrigerado'],
       required: true,
     },
+    relleno: {
+      type: String,
+      enum: ['limon', 'clasica'],
+      required: true,
+    },
+    base_galleta: {
+      type: String,
+      enum: ['oreo', 'vainilla', null],
+      default: null,
+    },
+    dorado: {
+      type: String,
+      enum: ['medio', 'dorado'],
+      required: true,
+    },
+    decorado: {
+      type: String,
+      enum: ['frutos_rojos', 'arequite', 'chantilli_oreo', 'bocadillo', 'sin_decorar'],
+      required: true,
+    },
     decoraciones: [{
       type: String,
       enum: ['fresas', 'arandanos', 'chocolate', 'caramelo', 'mermelada', 'nueces', 'oreo', 'matcha'],
@@ -49,14 +71,16 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0,
-    max: 9,
+    max: 11,
   },
   timestamps_pasos: {
     pending:    { type: Date },
     awakening:  { type: Date },
-    kitchen:    { type: Date },
-    preparing:  { type: Date },
+    mold:       { type: Date },
+    mixing:     { type: Date },
+    pouring:    { type: Date },
     baking:     { type: Date },
+    cooling:    { type: Date },
     decorating: { type: Date },
     packaging:  { type: Date },
     shipping:   { type: Date },
@@ -95,15 +119,44 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
+// Price calculation static method
+orderSchema.statics.calcularPrecio = function({ tipo, relleno, base_galleta, dorado, decorado }) {
+  let precio = tipo === 'horneado' ? 350 : 300;
+
+  // Relleno
+  if (relleno === 'limon') precio += 25;
+
+  // Base de galleta
+  if (base_galleta === 'oreo') precio += 25;
+  else if (base_galleta === 'vainilla') precio += 15;
+
+  // Dorado
+  if (dorado === 'dorado') precio += 30;
+
+  // Decorado
+  const preciosDecorado = {
+    frutos_rojos: 35,
+    arequite: 40,
+    chantilli_oreo: 45,
+    bocadillo: 30,
+    sin_decorar: 0,
+  };
+  precio += preciosDecorado[decorado] || 0;
+
+  return precio;
+};
+
 // Static: get step label in Spanish
 orderSchema.statics.getStepLabel = function(step) {
   const labels = {
     pending:    'Pendiente',
     awakening:  '¡Despertando al cocinero!',
-    kitchen:    'Revelando la cocina',
-    preparing:  'Preparando ingredientes',
-    baking:     'Horneando con amor',
-    decorating: '¡Decorando tu cheesecake!',
+    mold:       'Preparar molde',
+    mixing:     'Mezclar ingredientes',
+    pouring:    'Verter en el molde',
+    baking:     'Horneando',
+    cooling:    'Enfriar y refrigerar',
+    decorating: 'Decorando',
     packaging:  'Empacando con cariño',
     shipping:   '¡En camino!',
     delivered:  '¡Entregado! 🎉',
