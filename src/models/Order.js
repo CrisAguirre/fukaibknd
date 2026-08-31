@@ -23,7 +23,7 @@ const orderSchema = new mongoose.Schema({
   },
   cocinero: {
     type: String,
-    enum: ['capibara', 'kitty', 'aguacate'],
+    enum: ['kitty', 'kato', 'chiwi'],
     required: [true, 'Debes seleccionar un cocinero'],
   },
   cheesecake: {
