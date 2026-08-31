@@ -52,7 +52,26 @@ setupWebSocket(io);
 // Connect to DB and start server
 const PORT = process.env.PORT || 4000;
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  // --- TEST SEEDER: Auto-create admin user ---
+  try {
+    const User = require('./src/models/User');
+    const existingAdmin = await User.findOne({ email: 'admin@fukai.com' });
+    if (!existingAdmin) {
+      const adminUser = new User({
+        nombre: 'admin',
+        email: 'admin@fukai.com',
+        password: 'admin123',
+        rol: 'admin'
+      });
+      await adminUser.save();
+      console.log('Test admin user created (admin@fukai.com / admin123)');
+    }
+  } catch (err) {
+    console.error('Failed to seed admin user:', err);
+  }
+  // -------------------------------------------
+
   server.listen(PORT, () => {
     console.log(`\n🍰 ══════════════════════════════════════════`);
     console.log(`   深い Fukai Backend`);
